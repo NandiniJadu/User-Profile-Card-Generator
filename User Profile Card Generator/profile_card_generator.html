@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Profile Card Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0f;
+    --surface: #16161a;
+    --surface2: #1e1e24;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0eff4;
+    --muted: #8b8a96;
+    --accent: #c8ff3e;
+    --accent-dim: rgba(200,255,62,0.12);
+    --accent-text: #0d0d0f;
+    --danger: #ff4d6d;
+    --info: #5c9eff;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(28px, 5vw, 42px);
+    text-align: center;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+
+  h1 em { color: var(--accent); font-style: italic; }
+
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 15px;
+    margin-bottom: 40px;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 680px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+  }
+
+  .panel-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  .field { margin-bottom: 16px; }
+
+  input[type="text"],
+  input[type="url"],
+  textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: vertical;
+  }
+
+  input:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(200,255,62,0.1);
+  }
+
+  input::placeholder, textarea::placeholder { color: var(--muted); opacity: 0.6; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
+
+  .chip {
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .chip:hover { border-color: var(--accent); color: var(--text); }
+  .chip.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+  .btn-generate {
+    width: 100%;
+    padding: 13px;
+    background: var(--accent);
+    color: var(--accent-text);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .btn-generate:hover { background: #d8ff5a; transform: translateY(-1px); }
+  .btn-generate:active { transform: translateY(0); }
+  .btn-generate:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .btn-generate .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(0,0,0,0.2);
+    border-top-color: var(--accent-text);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+
+  .btn-generate.loading .spinner { display: block; }
+  .btn-generate.loading .btn-label { opacity: 0.6; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .err { font-size: 12px; color: var(--danger); margin-top: 8px; display: none; }
+
+  /* --- Card Preview --- */
+  .preview-empty {
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    padding: 48px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .preview-empty i { font-size: 36px; opacity: 0.3; }
+
+  .skeleton { display: none; }
+  .skeleton.show { display: flex; flex-direction: column; gap: 10px; }
+
+  .skel {
+    background: linear-gradient(90deg, var(--surface2) 25%, var(--surface) 50%, var(--surface2) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 6px;
+  }
+
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  /* The actual card */
+  .profile-card {
+    display: none;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    overflow: hidden;
+    animation: fadeUp 0.4s ease;
+  }
+
+  .profile-card.show { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-banner {
+    height: 80px;
+    background: linear-gradient(135deg, #1a2a12 0%, #0d1f2d 100%);
+    position: relative;
+  }
+
+  .card-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      45deg, transparent, transparent 10px,
+      rgba(200,255,62,0.03) 10px, rgba(200,255,62,0.03) 20px
+    );
+  }
+
+  .card-body { padding: 0 22px 22px; }
+
+  .card-top {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    margin-top: -32px;
+    position: relative;
+  }
+
+  .card-avatar {
+    width: 68px; height: 68px;
+    border-radius: 50%;
+    border: 3px solid var(--surface2);
+    object-fit: cover;
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .avatar-initials {
+    width: 68px; height: 68px;
+    border-radius: 50%;
+    border: 3px solid var(--surface2);
+    background: var(--accent-dim);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 600; color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .card-actions { display: flex; gap: 8px; }
+
+  .card-btn {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+
+  .card-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .card-btn.liked { background: rgba(255,77,109,0.15); border-color: var(--danger); color: var(--danger); }
+
+  .card-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--text);
+    letter-spacing: -0.3px;
+    margin-bottom: 2px;
+  }
+
+  .card-tagline { font-size: 13px; color: var(--accent); font-weight: 500; margin-bottom: 4px; }
+
+  .card-location {
+    font-size: 12px; color: var(--muted);
+    display: flex; align-items: center; gap: 4px;
+    margin-bottom: 14px;
+  }
+
+  .card-bio {
+    font-size: 14px; color: var(--muted);
+    line-height: 1.65;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+    margin-bottom: 14px;
+  }
+
+  .card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+
+  .card-tag {
+    font-size: 11px; padding: 4px 10px;
+    border-radius: 99px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border: 1px solid rgba(200,255,62,0.2);
+    font-weight: 500;
+  }
+
+  .card-stats {
+    display: grid; grid-template-columns: repeat(3,1fr);
+    gap: 1px;
+    background: var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+
+  .card-stat {
+    background: var(--surface);
+    padding: 12px 8px;
+    text-align: center;
+  }
+
+  .stat-n { font-size: 18px; font-weight: 600; color: var(--text); }
+  .stat-l { font-size: 10px; color: var(--muted); margin-top: 2px; letter-spacing: 0.04em; }
+
+  .card-socials { display: flex; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 14px; }
+
+  .social-link {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--muted);
+    text-decoration: none;
+    padding: 5px 11px;
+    border-radius: 99px;
+    border: 1px solid var(--border2);
+    transition: all 0.15s;
+  }
+
+  .social-link:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-dim); }
+
+  /* Download / Copy area */
+  .card-footer {
+    display: none;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .card-footer.show { display: flex; }
+
+  .btn-action {
+    flex: 1;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    transition: all 0.15s;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--muted);
+  }
+
+  .btn-action:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+  .btn-action.copied { border-color: #5c9eff; color: #5c9eff; background: rgba(92,158,255,0.1); }
+
+  .toast {
+    position: fixed;
+    bottom: 30px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 99px;
+    padding: 10px 22px;
+    font-size: 13px;
+    color: var(--text);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s;
+    z-index: 999;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast i { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<h1>Profile Card <em>Generator</em></h1>
+<p class="subtitle">Fill in your details — AI crafts a stunning profile card instantly.</p>
+
+<div class="layout">
+  <!-- FORM -->
+  <div class="panel">
+    <div class="panel-title"><i class="ti ti-user-edit"></i> Your Details</div>
+
+    <div class="field">
+      <label for="f-name">Full Name *</label>
+      <input id="f-name" type="text" placeholder="e.g. Priya Sharma" />
+    </div>
+
+    <div class="field">
+      <label for="f-role">Role / Title</label>
+      <input id="f-role" type="text" placeholder="e.g. Product Designer at Figma" />
+    </div>
+
+    <div class="field">
+      <label for="f-bio">Short Bio *</label>
+      <textarea id="f-bio" rows="3" placeholder="Tell us about yourself in a few sentences..."></textarea>
+    </div>
+
+    <div class="field">
+      <label for="f-img">Avatar Image URL (optional)</label>
+      <input id="f-img" type="url" placeholder="https://i.pravatar.cc/150" />
+    </div>
+
+    <div class="field">
+      <label>Interests / Skills (pick any)</label>
+      <div class="chips" id="chips">
+        <button class="chip" data-val="Design">Design</button>
+        <button class="chip" data-val="Engineering">Engineering</button>
+        <button class="chip" data-val="AI / ML">AI / ML</button>
+        <button class="chip" data-val="Research">Research</button>
+        <button class="chip" data-val="Leadership">Leadership</button>
+        <button class="chip" data-val="Writing">Writing</button>
+        <button class="chip" data-val="Marketing">Marketing</button>
+        <button class="chip" data-val="Finance">Finance</button>
+        <button class="chip" data-val="Open Source">Open Source</button>
+        <button class="chip" data-val="Data Science">Data Science</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="f-loc">Location (optional)</label>
+      <input id="f-loc" type="text" placeholder="e.g. Hyderabad, India" />
+    </div>
+
+    <button class="btn-generate" id="btn-gen">
+      <div class="spinner"></div>
+      <span class="btn-label">Generate Profile Card ✦</span>
+    </button>
+    <p class="err" id="err-msg">Please fill in at least your name and a short bio.</p>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="panel">
+    <div class="panel-title"><i class="ti ti-id-badge-2"></i> Live Preview</div>
+
+    <div class="preview-empty" id="empty-state">
+      <i class="ti ti-sparkles"></i>
+      <span>Your generated card will appear here</span>
+    </div>
+
+    <div class="skeleton" id="skeleton">
+      <div style="display:flex;gap:14px;align-items:center">
+        <div class="skel" style="width:68px;height:68px;border-radius:50%;flex-shrink:0"></div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+          <div class="skel" style="height:18px;width:55%"></div>
+          <div class="skel" style="height:12px;width:38%"></div>
+        </div>
+      </div>
+      <div class="skel" style="height:12px;width:100%"></div>
+      <div class="skel" style="height:12px;width:88%"></div>
+      <div class="skel" style="height:12px;width:70%"></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <div class="skel" style="height:52px;border-radius:8px"></div>
+        <div class="skel" style="height:52px;border-radius:8px"></div>
+        <div class="skel" style="height:52px;border-radius:8px"></div>
+      </div>
+    </div>
+
+    <div class="profile-card" id="profile-card">
+      <div class="card-banner"></div>
+      <div class="card-body">
+        <div class="card-top">
+          <div id="card-avatar"></div>
+          <div class="card-actions">
+            <button class="card-btn" id="btn-like" title="Like this profile" aria-label="Like"><i class="ti ti-heart"></i></button>
+            <button class="card-btn" id="btn-share" title="Share profile" aria-label="Share"><i class="ti ti-share"></i></button>
+            <button class="card-btn" id="btn-bookmark" title="Bookmark" aria-label="Bookmark"><i class="ti ti-bookmark"></i></button>
+          </div>
+        </div>
+        <div id="card-name" class="card-name"></div>
+        <div id="card-tagline" class="card-tagline"></div>
+        <div id="card-location" class="card-location" style="display:none">
+          <i class="ti ti-map-pin" style="font-size:12px"></i>
+          <span id="loc-text"></span>
+        </div>
+        <p id="card-bio" class="card-bio"></p>
+        <div id="card-tags" class="card-tags"></div>
+        <div id="card-stats" class="card-stats"></div>
+        <div id="card-socials" class="card-socials"></div>
+      </div>
+    </div>
+
+    <div class="card-footer" id="card-footer">
+      <button class="btn-action" id="btn-copy"><i class="ti ti-clipboard"></i> Copy Card Text</button>
+      <button class="btn-action" id="btn-download"><i class="ti ti-download"></i> Download HTML</button>
+      <button class="btn-action" id="btn-regenerate"><i class="ti ti-refresh"></i> Regenerate</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="ti ti-check"></i> <span id="toast-msg">Done!</span></div>
+
+<script>
+  const chips = document.querySelectorAll('.chip');
+  chips.forEach(c => c.addEventListener('click', () => c.classList.toggle('active')));
+
+  const btnGen = document.getElementById('btn-gen');
+  const errMsg = document.getElementById('err-msg');
+  const emptyState = document.getElementById('empty-state');
+  const skeleton = document.getElementById('skeleton');
+  const profileCard = document.getElementById('profile-card');
+  const cardFooter = document.getElementById('card-footer');
+  const toast = document.getElementById('toast');
+
+  let lastGenerated = null;
+
+  function showToast(msg) {
+    document.getElementById('toast-msg').textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+
+  // Like button
+  document.getElementById('btn-like').addEventListener('click', function() {
+    this.classList.toggle('liked');
+    const liked = this.classList.contains('liked');
+    this.innerHTML = liked ? '<i class="ti ti-heart-filled"></i>' : '<i class="ti ti-heart"></i>';
+    showToast(liked ? 'Added to favourites!' : 'Removed from favourites');
+  });
+
+  // Share button
+  document.getElementById('btn-share').addEventListener('click', function() {
+    if (navigator.share && lastGenerated) {
+      navigator.share({ title: lastGenerated.name, text: lastGenerated.bio }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(window.location.href).then(() => showToast('Link copied to clipboard!'));
+    }
+  });
+
+  // Bookmark button
+  document.getElementById('btn-bookmark').addEventListener('click', function() {
+    this.classList.toggle('liked');
+    const saved = this.classList.contains('liked');
+    this.innerHTML = saved ? '<i class="ti ti-bookmark-filled"></i>' : '<i class="ti ti-bookmark"></i>';
+    showToast(saved ? 'Profile bookmarked!' : 'Bookmark removed');
+  });
+
+  // Copy card text
+  document.getElementById('btn-copy').addEventListener('click', function() {
+    if (!lastGenerated) return;
+    const txt = `${lastGenerated.name}\n${lastGenerated.tagline}\n\n${lastGenerated.bio}\n\nSkills: ${(lastGenerated.tags||[]).join(', ')}`;
+    navigator.clipboard.writeText(txt).then(() => {
+      this.classList.add('copied');
+      this.innerHTML = '<i class="ti ti-check"></i> Copied!';
+      showToast('Card text copied!');
+      setTimeout(() => {
+        this.classList.remove('copied');
+        this.innerHTML = '<i class="ti ti-clipboard"></i> Copy Card Text';
+      }, 2000);
+    });
+  });
+
+  // Download HTML
+  document.getElementById('btn-download').addEventListener('click', function() {
+    if (!lastGenerated) return;
+    const d = lastGenerated;
+    const avatarHtml = d.imgUrl
+      ? `<img src="${d.imgUrl}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #1e1e24;" onerror="this.style.display='none'" />`
+      : `<div style="width:80px;height:80px;border-radius:50%;background:rgba(200,255,62,0.12);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:600;color:#c8ff3e;border:3px solid #1e1e24;">${d.initials}</div>`;
+    const tagsHtml = (d.tags||[]).map(t => `<span style="font-size:11px;padding:4px 10px;border-radius:99px;background:rgba(200,255,62,0.12);color:#c8ff3e;border:1px solid rgba(200,255,62,0.2);font-weight:500;">${t}</span>`).join('');
+    const statsHtml = (d.stats||[]).map(s => `<div style="background:#0d0d0f;padding:12px 8px;text-align:center;"><div style="font-size:18px;font-weight:600;color:#f0eff4;">${s.number}</div><div style="font-size:10px;color:#8b8a96;margin-top:2px;">${s.label}</div></div>`).join('');
+    const socialsHtml = (d.socialLinks||[]).map(l => `<a href="${l.url}" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#8b8a96;text-decoration:none;padding:5px 11px;border-radius:99px;border:1px solid rgba(255,255,255,0.14);">${l.label}</a>`).join('');
+    const locHtml = d.location ? `<div style="font-size:12px;color:#8b8a96;margin-bottom:14px;">📍 ${d.location}</div>` : '';
+
+    const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><title>${d.name} — Profile Card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>body{background:#0d0d0f;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:'DM Sans',sans-serif;padding:20px;}</style>
+</head><body>
+<div style="background:#1e1e24;border:1px solid rgba(255,255,255,0.14);border-radius:14px;overflow:hidden;width:100%;max-width:380px;">
+  <div style="height:80px;background:linear-gradient(135deg,#1a2a12,#0d1f2d);"></div>
+  <div style="padding:0 22px 22px;">
+    <div style="margin-top:-34px;margin-bottom:14px;">${avatarHtml}</div>
+    <div style="font-family:'DM Serif Display',serif;font-size:24px;color:#f0eff4;margin-bottom:3px;">${d.name}</div>
+    <div style="font-size:13px;color:#c8ff3e;font-weight:500;margin-bottom:4px;">${d.tagline}</div>
+    ${locHtml}
+    <p style="font-size:14px;color:#8b8a96;line-height:1.65;border-top:1px solid rgba(255,255,255,0.08);padding-top:14px;margin-bottom:14px;">${d.bio}</p>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;">${tagsHtml}</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,0.08);border-radius:8px;overflow:hidden;margin-bottom:16px;">${statsHtml}</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.08);padding-top:14px;">${socialsHtml}</div>
+  </div>
+</div>
+</body></html>`;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${d.name.replace(/\s+/g,'_')}_profile_card.html`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showToast('Profile card downloaded!');
+  });
+
+  // Regenerate
+  document.getElementById('btn-regenerate').addEventListener('click', () => {
+    generateCard();
+  });
+
+  // Main generate
+  btnGen.addEventListener('click', generateCard);
+
+  async function generateCard() {
+    const name = document.getElementById('f-name').value.trim();
+    const role = document.getElementById('f-role').value.trim();
+    const bio = document.getElementById('f-bio').value.trim();
+    const imgUrl = document.getElementById('f-img').value.trim();
+    const location = document.getElementById('f-loc').value.trim();
+    const selected = [...chips].filter(c => c.classList.contains('active')).map(c => c.dataset.val);
+
+    if (!name || !bio) { errMsg.style.display = 'block'; return; }
+    errMsg.style.display = 'none';
+
+    emptyState.style.display = 'none';
+    profileCard.classList.remove('show');
+    cardFooter.classList.remove('show');
+    skeleton.classList.add('show');
+    btnGen.disabled = true;
+    btnGen.classList.add('loading');
+
+    const prompt = `You are a profile card data generator. Return ONLY valid JSON — no markdown, no backticks, no preamble.
+
+User details:
+- Name: ${name}
+- Role: ${role || 'Not specified'}
+- Bio: ${bio}
+- Location: ${location || 'Not specified'}
+- Interests/Skills: ${selected.length ? selected.join(', ') : 'Not specified'}
+
+Return exactly this JSON structure:
+{
+  "polishedBio": "A refined, punchy 1-2 sentence bio",
+  "tagline": "Witty tagline under 8 words",
+  "stats": [
+    {"number": "7+", "label": "Years Exp."},
+    {"number": "40+", "label": "Projects"},
+    {"number": "1.2k", "label": "Connections"}
+  ],
+  "tags": ["Tag1", "Tag2", "Tag3", "Tag4"],
+  "socialLinks": [
+    {"icon": "ti-brand-linkedin", "label": "LinkedIn", "url": "#"},
+    {"icon": "ti-brand-github", "label": "GitHub", "url": "#"}
+  ]
+}
+
+Make stats plausible for the role. Tags from interests/skills. Keep everything concise.`;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+
+      const data = await res.json();
+      const rawText = data.content.map(b => b.text || '').join('');
+      const clean = rawText.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(clean);
+
+      skeleton.classList.remove('show');
+
+      // Avatar
+      const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+      const avatarEl = document.getElementById('card-avatar');
+      if (imgUrl) {
+        avatarEl.innerHTML = `<img class="card-avatar" src="${imgUrl}" alt="${name}" onerror="this.outerHTML='<div class=avatar-initials>${initials}</div>'" />`;
+      } else {
+        avatarEl.innerHTML = `<div class="avatar-initials">${initials}</div>`;
+      }
+
+      document.getElementById('card-name').textContent = name;
+      document.getElementById('card-tagline').textContent = parsed.tagline || '';
+
+      if (location) {
+        document.getElementById('card-location').style.display = 'flex';
+        document.getElementById('loc-text').textContent = location;
+      } else {
+        document.getElementById('card-location').style.display = 'none';
+      }
+
+      document.getElementById('card-bio').textContent = parsed.polishedBio || bio;
+
+      const tagsEl = document.getElementById('card-tags');
+      tagsEl.innerHTML = (parsed.tags || selected).map(t => `<span class="card-tag">${t}</span>`).join('');
+
+      const statsEl = document.getElementById('card-stats');
+      statsEl.innerHTML = (parsed.stats || []).map(s =>
+        `<div class="card-stat"><div class="stat-n">${s.number}</div><div class="stat-l">${s.label}</div></div>`
+      ).join('');
+
+      const socialsEl = document.getElementById('card-socials');
+      socialsEl.innerHTML = (parsed.socialLinks || []).map(l =>
+        `<a href="${l.url}" class="social-link"><i class="ti ${l.icon}" style="font-size:14px"></i>${l.label}</a>`
+      ).join('');
+
+      // Reset like/bookmark buttons
+      document.getElementById('btn-like').className = 'card-btn';
+      document.getElementById('btn-like').innerHTML = '<i class="ti ti-heart"></i>';
+      document.getElementById('btn-bookmark').className = 'card-btn';
+      document.getElementById('btn-bookmark').innerHTML = '<i class="ti ti-bookmark"></i>';
+
+      lastGenerated = { name, role, bio: parsed.polishedBio || bio, tagline: parsed.tagline, tags: parsed.tags, stats: parsed.stats, socialLinks: parsed.socialLinks, initials, imgUrl, location };
+
+      profileCard.classList.add('show');
+      cardFooter.classList.add('show');
+      showToast('Profile card generated!');
+    } catch (e) {
+      skeleton.classList.remove('show');
+      emptyState.style.display = 'flex';
+      emptyState.innerHTML = '<i class="ti ti-alert-circle" style="font-size:32px;opacity:0.4"></i><span style="color:#ff4d6d">Generation failed. Check your connection and try again.</span>';
+    }
+
+    btnGen.disabled = false;
+    btnGen.classList.remove('loading');
+  }
+</script>
+</body>
+</html>
